@@ -212,6 +212,9 @@ typedef enum QUIC_DATAGRAM_SEND_STATE {
 typedef struct QUIC_REGISTRATION_CONFIG { // All fields may be NULL/zero.
     const char* AppName;
     QUIC_EXECUTION_PROFILE ExecutionProfile;
+    uint8_t* AffinityMask;
+    uint8_t AffinityMaskLength;
+    uint16_t MaxWorkers;
 } QUIC_REGISTRATION_CONFIG;
 
 typedef

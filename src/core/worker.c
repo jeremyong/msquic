@@ -697,6 +697,8 @@ _IRQL_requires_max_(PASSIVE_LEVEL)
 QUIC_STATUS
 QuicWorkerPoolInitialize(
     _In_opt_ const void* Owner,
+    _In_opt_ uint8_t* AffinityMask,
+    _In_ uint16_t AffinityMaskLength,
     _In_ uint16_t ThreadFlags,
     _In_ uint16_t WorkerCount,
     _Out_ QUIC_WORKER_POOL** NewWorkerPool
@@ -725,8 +727,42 @@ QuicWorkerPoolInitialize(
     // attempt to spread the connection workload out over multiple processors.
     //
 
+    uint16_t IdealCore = 0;
+    uint8_t AffinityMaskIndex = 0;
+
     for (uint16_t i = 0; i < WorkerCount; i++) {
-        Status = QuicWorkerInitialize(Owner, ThreadFlags, i, &WorkerPool->Workers[i]);
+        if (AffinityMask == NULL || ThreadFlags != CXPLAT_THREAD_FLAG_SET_AFFINITIZE) {
+            IdealCore = i;
+        } else {
+            uint8_t* Mask = &AffinityMask[AffinityMaskIndex];
+            BOOLEAN IdealCoreFound = FALSE;
+            while (!IdealCoreFound && AffinityMaskIndex < AffinityMaskLength)
+            {
+                if (*Mask == 0)
+                {
+                    ++AffinityMaskIndex;
+                    continue;
+                }
+
+                // TODO: Replace with CLZ and BitScan intrinsics
+                for (uint16_t j = 0; j != 8; ++j)
+                {
+                    if ((*Mask & (1 << j)) == 1)
+                    {
+                        IdealCore = AffinityMaskIndex * 8 + j;
+                        *Mask &= ~(1 << j);
+                        IdealCoreFound = TRUE;
+                        break;
+                    }
+                }
+            }
+
+            if (AffinityMaskIndex == AffinityMaskLength) {
+                break;
+            }
+        }
+
+        Status = QuicWorkerInitialize(Owner, ThreadFlags, IdealCore, &WorkerPool->Workers[i]);
         if (QUIC_FAILED(Status)) {
             for (uint16_t j = 0; j < i; j++) {
                 QuicWorkerUninitialize(&WorkerPool->Workers[j]);

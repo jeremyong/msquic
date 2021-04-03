@@ -70,6 +70,8 @@ MsQuicRegistrationOpen(
     Registration->NoPartitioning = FALSE;
     Registration->SplitPartitioning = FALSE;
     Registration->ExecProfile = Config == NULL ? QUIC_EXECUTION_PROFILE_LOW_LATENCY : Config->ExecutionProfile;
+    Registration->AffinityMask = Config == NULL ? NULL : Config->AffinityMask;
+    Registration->AffinityMaskLength = Registration->AffinityMask == NULL ? 0 : Config->AffinityMaskLength;
     Registration->CidPrefixLength = 0;
     Registration->CidPrefix = NULL;
     CxPlatLockInitialize(&Registration->ConfigLock);
@@ -117,11 +119,21 @@ MsQuicRegistrationOpen(
         Registration->SplitPartitioning = FALSE; // Not enough partitions.
     }
 
+    uint16_t WorkerCount = Registration->NoPartitioning ? 1 : MsQuicLib.PartitionCount;
+    if (Config != NULL && Config->MaxWorkers > 0 && Registration->AffinityMask == NULL)
+    {
+        WorkerCount = WorkerCount < Config->MaxWorkers
+            ? WorkerCount
+            : Config->MaxWorkers;
+    }
+
     Status =
         QuicWorkerPoolInitialize(
             Registration,
+            Registration->AffinityMask,
+            Registration->AffinityMaskLength,
             WorkerThreadFlags,
-            Registration->NoPartitioning ? 1 : MsQuicLib.PartitionCount,
+            WorkerCount,
             &Registration->WorkerPool);
     if (QUIC_FAILED(Status)) {
         goto Error;

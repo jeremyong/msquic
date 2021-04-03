@@ -287,7 +287,11 @@ if(WIN32)
         # Configured for training mode. Use the previous PGD file if present.
         if(EXISTS "${QUIC_PGO_FILE}")
             message(STATUS "/GENPROFILE:PDG")
-            configure_file("${QUIC_PGO_FILE}" "${QUIC_OUTPUT_DIR}/msquic.pgd" COPYONLY)
+            add_custom_target(
+                copy_pgd
+                ALL 
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${QUIC_PGO_FILE} ${QUIC_OUTPUT_DIR}/msquic.pgd
+            )
             set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /GENPROFILE:PGD=${QUIC_OUTPUT_DIR}/msquic.pgd")
         else()
             message(STATUS "/GENPROFILE")
@@ -297,7 +301,11 @@ if(WIN32)
         # Just doing a normal build. Use the PGD file if present.
         if(EXISTS "${QUIC_PGO_FILE}")
             message(STATUS "Using profile-guided optimization")
-            configure_file("${QUIC_PGO_FILE}" "${QUIC_OUTPUT_DIR}/msquic.pgd" COPYONLY)
+            add_custom_target(
+                copy_pgd
+                ALL 
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${QUIC_PGO_FILE} ${QUIC_OUTPUT_DIR}/msquic.pgd
+            )
             set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /USEPROFILE:PGD=${QUIC_OUTPUT_DIR}/msquic.pgd")
         endif()
     endif()

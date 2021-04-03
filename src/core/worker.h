@@ -121,6 +121,8 @@ _IRQL_requires_max_(PASSIVE_LEVEL)
 QUIC_STATUS
 QuicWorkerPoolInitialize(
     _In_opt_ const void* Owner,
+    _In_opt_ uint8_t* AffinityMask,
+    _In_ uint16_t AffinityMaskLength,
     _In_ uint16_t ThreadFlags,
     _In_ uint16_t WorkerCount,
     _Out_ QUIC_WORKER_POOL** WorkerPool

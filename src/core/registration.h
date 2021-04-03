@@ -53,6 +53,12 @@ typedef struct QUIC_REGISTRATION {
     QUIC_EXECUTION_PROFILE ExecProfile;
 
     //
+    // App (optionally) configured affinity mask
+    //
+    uint8_t AffinityMaskLength;
+    uint8_t* AffinityMask;
+
+    //
     // An app configured prefix for all connection IDs in this registration.
     //
     uint8_t CidPrefixLength;
